@@ -3,6 +3,7 @@ import pandas as pd
 import io
 from datetime import datetime
 import sha256
+import json
 
 
 s3_client = boto3.client('s3')
@@ -17,7 +18,7 @@ csv_content = csv_data['Body'].read()
 df = pd.read_csv(io.BytesIO(csv_content))
 
 # Select highest probability trades
-targets = df[df['y'] > 10.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(5)
+targets = df[df['y'] > 10.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(4)
 targets = targets.assign(timestamp=current_date, strategy='cmcmodel', action='BUY', amount='0.0005')[['symbol', 'timestamp', 'action', 'amount', 'y']]
 
 
