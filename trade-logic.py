@@ -19,7 +19,7 @@ df = pd.read_csv(io.BytesIO(csv_content))
 
 # Select highest probability trades
 targets = df[df['y'] > 10.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(4)
-targets = targets.assign(timestamp=current_date, strategy='cmcmodel', action='BUY', amount='0.0005')[['symbol', 'timestamp', 'action', 'amount', 'y']]
+targets = targets.assign(timestamp=current_date, strategy='cmcmodel', action='BUY', amount='0.0005')[['symbol', 'timestamp', 'date_added','price', 'action', 'amount', 'y']]
 
 
 # Create JSON payload & send to SQS
