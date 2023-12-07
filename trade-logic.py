@@ -26,34 +26,46 @@ def get_object_from_s3(key):
 predictions_df = get_object_from_s3(predictions_file)
 balances_df = get_object_from_s3(balances_file)
 orders_df = get_object_from_s3(orders_log_file)
+#balances_df = pd.DataFrame(data={'symbol': ['usdc', 'UBT'], 'balance': [100, 90]})
+
 
 #sell
-sells = balances_df.merge(predictions_df[predictions_df['y'] < 5.0], how='left', on='symbol')
-for index, row in sells.iterrows():
-    exchange_rate = 1 / float(row['price'])
-    balance = float(row['balance'])
-    sells.loc[sells['symbol'] == 'usdc']['balance'] = sells.loc[sells['symbol'] == 'usdc']['balance'] + ( balance / exchange_rate)
-    row['balance'] = 0
-balances_df = sells
+balances_df = balances_df.merge(predictions_df, how='left', on='symbol')
+balances_df = balances_df.fillna(0)
+
+for index, row in balances_df.iterrows():
+    if row['symbol'] != 'usdc' and row['y'] < 10.0:
+        print(f'selling: {row["symbol"]}')
+        exchange_rate = 1 / float(row['price'])
+        balance = float(row['balance'])
+        balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] + (balance / exchange_rate)
+        balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = 0
+
+
+
 
 #buy
 buys = predictions_df[predictions_df['y'] > 28.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
+print(balances_df)
 if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
     for index, row in buys.iterrows():
+        print(f'buying: {row["symbol"]}')
         if row['symbol'] not in balances_df['symbol'].values:
             new_row = pd.DataFrame({
             'symbol': [row['symbol']],
             'balance': [10 / float(row['price'])]
             })
+            
             balances_df = pd.concat([balances_df, new_row])
+            balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
+            
         else:
-            balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] + (10 / float(row['price']))
-        balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
+            #Comment out so will not buy if position alreadt open
+            #balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] + (10 / float(row['price']))
+            #balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
 
     
 balances_df = balances_df[['symbol', 'balance']]
-balances_df['balance'] = balances_df['balance'].round(5)
-
 s3_client.put_object(Bucket='gascity', Key=balances_file, Body=balances_df.to_csv(index=False))
 
 # email via gmail api
