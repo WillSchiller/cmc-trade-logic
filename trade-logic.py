@@ -47,7 +47,7 @@ if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
             })
             balances_df = pd.concat([balances_df, new_row])
         else:
-            balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = 10 / float(row['price'])
+            balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = 25 / float(row['price'])
 
         balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
 
