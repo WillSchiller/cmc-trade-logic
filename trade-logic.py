@@ -46,7 +46,7 @@ for index, row in balances_df.iterrows():
 
 #buy
 buys = predictions_df[predictions_df['y'] > 28.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
-print(balances_df)
+
 if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
     for index, row in buys.iterrows():
         print(f'buying: {row["symbol"]}')
@@ -58,8 +58,7 @@ if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
             
             balances_df = pd.concat([balances_df, new_row])
             balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
-            
-        else:
+        #else:
             #Comment out so will not buy if position alreadt open
             #balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] + (10 / float(row['price']))
             #balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
