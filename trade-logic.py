@@ -32,12 +32,12 @@ sells = balances_df.merge(predictions_df[predictions_df['y'] < 5.0], how='left',
 for index, row in sells.iterrows():
     exchange_rate = 1 / float(row['price'])
     balance = float(row['balance'])
-    sells.loc[sells['symbol'] == 'usdc']['balance'] = sells.loc[sells['symbol'] == 'usdc']['balance'] + (exchange_rate * balance)
+    sells.loc[sells['symbol'] == 'usdc']['balance'] = sells.loc[sells['symbol'] == 'usdc']['balance'] + ( balance / exchange_rate)
     row['balance'] = 0
 balances_df = sells
 
 #buy
-buys = predictions_df[predictions_df['y'] > 10.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
+buys = predictions_df[predictions_df['y'] > 28.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
 if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
     for index, row in buys.iterrows():
         if row['symbol'] not in balances_df['symbol'].values:
@@ -47,8 +47,7 @@ if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
             })
             balances_df = pd.concat([balances_df, new_row])
         else:
-            balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = 25 / float(row['price'])
-
+            balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] + (10 / float(row['price']))
         balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
 
     
