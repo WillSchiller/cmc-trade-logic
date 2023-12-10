@@ -5,6 +5,10 @@ import io
 from datetime import datetime
 import sha256
 import json
+from decimal import Decimal, getcontext
+
+# Set the precision (number of significant digits)
+getcontext().prec = 30
 
 
 s3_client = boto3.client('s3')
@@ -28,19 +32,23 @@ def get_object_from_s3(key):
 predictions_df = get_object_from_s3(predictions_file)
 balances_df = get_object_from_s3(balances_file)
 orders_df = get_object_from_s3(orders_log_file)
-#balances_df = pd.DataFrame(data={'symbol': ['usdc', 'UBT'], 'balance': [100, 90]})
+#balances_df = pd.DataFrame(data={'symbol': ['USDC', 'UBT'], 'balance': [100, 90]})
 
 
 #sell
-balances_df = balances_df.merge(predictions_df, how='left', on='symbol')
+print(balances_df)
+balances_df = balances_df.merge(predictions_df, how='left', on=['symbol' , 'name'])
 balances_df = balances_df.fillna(0)
 
+print(balances_df)
+
 for index, row in balances_df.iterrows():
-    if row['symbol'] != 'usdc' and row['y'] < 0.0:
+    if row['symbol'] != 'USDC' and row['y'] < 3.0:
         print(f'selling: {row["symbol"]}')
-        exchange_rate = 1 / float(row['price'])
-        balance = float(row['balance'])
-        balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] + (balance / exchange_rate)
+        print(f'price: decimals{row["price"]}')
+        exchange_rate = 1 / Decimal(row['price'])
+        balance = Decimal(row['balance'])
+        balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] = balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] + float(balance / exchange_rate)
         index = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'].index
         balances_df = balances_df.drop(index)
         new_row = pd.DataFrame({'symbol': row['symbol'], 'name': row['name'], 'direction': 'SELL', 'price': row['price'], 'amount': balance, 'exchange_rate': exchange_rate, 'date': current_date, 'y': row['y']}, index=[0])
@@ -52,23 +60,24 @@ for index, row in balances_df.iterrows():
 #buy
 buys = predictions_df[predictions_df['y'] > 34.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
 
-if (balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] > 10).any():
+if (balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] > 10).any():
     #if bug keeps happen we can remove look and just take .head(1)
     for index, row in buys.iterrows():
         if row['symbol'] not in balances_df['symbol'].values:
             print(f'buying: {row["symbol"]}')
-            balance = 10 / float(row['price'])
+            balance = 10 / Decimal(row['price'])
             new_row = pd.DataFrame({
             'symbol': [row['symbol']],
+            'name': [row['name']],
             'balance': [balance]
             })
             balances_df = pd.concat([balances_df, new_row])
-            balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
+            balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] = balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] - 10
             new_row = pd.DataFrame({'symbol': row['symbol'], 'name': row['name'], 'direction': 'BUY', 'price': row['price'], 'amount': balance, 'exchange_rate': 0, 'date': current_date, 'y': row['y']}, index=[0])
             trades = pd.concat([trades, new_row])         #else:
             #Comment out so will not buy if position alreadt open
-            #balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] + (10 / float(row['price']))
-            #balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] = balances_df.loc[balances_df['symbol'] == 'usdc', 'balance'] - 10
+            #balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'] + (10 / Decimal(row['price']))
+            #balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] = balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] - 10
 
     
 balances_df = balances_df[['symbol', 'balance']]
