@@ -20,7 +20,7 @@ balances_file = f'cmc/trades/balances.csv'
 orders_log_file = f'cmc/trades/orders.csv' 
 
 def get_object_from_s3(key):
-    try:
+    try: 
         csv_data = s3_client.get_object(Bucket='gascity', Key=key)
         csv_content = csv_data['Body'].read()
         return pd.read_csv(io.BytesIO(csv_content))
@@ -36,14 +36,13 @@ orders_df = get_object_from_s3(orders_log_file)
 
 
 #sell
-print(balances_df)
 balances_df = balances_df.merge(predictions_df, how='left', on=['symbol' , 'name'])
 balances_df = balances_df.fillna(0)
 
-print(balances_df)
+
 
 for index, row in balances_df.iterrows():
-    if row['symbol'] != 'USDC' and row['y'] < 3.0:
+    if row['symbol'].strip().upper() != 'USDC' and row['y'] < 3.0:
         print(f'selling: {row["symbol"]}')
         print(f'price: decimals{row["price"]}')
         exchange_rate = 1 / Decimal(row['price'])
