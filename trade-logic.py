@@ -79,7 +79,7 @@ if (balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] > 10).any():
             #balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] = balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] - 10
 
     
-balances_df = balances_df[['symbol', 'balance']]
+balances_df = balances_df[['symbol', 'name','balance']]
 s3_client.put_object(Bucket='gascity', Key=balances_file, Body=balances_df.to_csv(index=False))
 
 
