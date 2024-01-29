@@ -42,22 +42,26 @@ balances_df = balances_df.fillna(0)
 
 
 for index, row in balances_df.iterrows():
-    if row['symbol'].strip().upper() != 'USDC' and row['y'] < 3.0:
+    if row['symbol'].strip().upper() != 'USDC' and row['y'] == 0:
         print(f'selling: {row["symbol"]}')
         print(f'price: decimals{row["price"]}')
-        exchange_rate = 1 / Decimal(row['price'])
-        balance = Decimal(row['balance'])
-        balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] = balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] + float(balance / exchange_rate)
-        index = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'].index
-        balances_df = balances_df.drop(index)
-        new_row = pd.DataFrame({'symbol': row['symbol'], 'name': row['name'], 'direction': 'SELL', 'price': row['price'], 'amount': balance, 'exchange_rate': exchange_rate, 'date': current_date, 'y': row['y']}, index=[0])
+        try:
+            exchange_rate = Decimal(row['price'])
+            exchange_rate = 1 / Decimal(row['price'])
+            balance = Decimal(row['balance'])
+            balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] = balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] + float(balance / exchange_rate)
+            index = balances_df.loc[balances_df['symbol'] == row['symbol'], 'balance'].index
+            balances_df = balances_df.drop(index)
+            new_row = pd.DataFrame({'symbol': row['symbol'], 'name': row['name'], 'direction': 'SELL', 'price': row['price'], 'amount': balance, 'exchange_rate': exchange_rate, 'date': current_date, 'y': row['y']}, index=[0])
+        except: 
+            new_row = pd.DataFrame({'symbol': row['symbol'], 'name': row['name'], 'direction': 'SELL', 'price': row['price'], 'amount': "ERROR", 'exchange_rate': 0, 'date': current_date, 'y': row['y']}, index=[0])
         trades = pd.concat([trades, new_row]) 
 
 
 
 
 #buy
-buys = predictions_df[predictions_df['y'] > 34.0].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
+buys = predictions_df[predictions_df['y'] == 1].sort_values(by=['y', 'cmc_rank'], ascending=False).head(1)
 
 if (balances_df.loc[balances_df['symbol'] == 'USDC', 'balance'] > 10).any():
     #if bug keeps happen we can remove look and just take .head(1)
